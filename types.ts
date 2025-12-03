@@ -5,6 +5,12 @@ export enum Subject {
   LIFESCIENCE = 'Life Science'
 }
 
+export enum EducationLevel {
+  ELEMENTARY = 'Elementary',
+  MIDDLE = 'Middle School',
+  HIGH = 'High School'
+}
+
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
@@ -15,7 +21,7 @@ export interface Chemical {
   formula: string;
   name: string;
   state: 's' | 'l' | 'g' | 'aq';
-  type: 'acid' | 'base' | 'salt' | 'metal' | 'oxide';
+  type: 'acid' | 'base' | 'salt' | 'metal' | 'oxide' | 'household';
   color: string;
 }
 

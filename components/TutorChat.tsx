@@ -1,27 +1,42 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Subject, ChatMessage } from '../types';
+import { Subject, ChatMessage, EducationLevel } from '../types';
 import { getTutorResponse } from '../services/geminiService';
-import { MessageSquare, Send, BookOpen, X, Sparkles } from 'lucide-react';
+import { MessageSquare, Send, BookOpen, X, Sparkles, Smile } from 'lucide-react';
 
 interface Props {
   subject: Subject;
+  level: EducationLevel;
 }
 
-const TutorChat: React.FC<Props> = ({ subject }) => {
+const TutorChat: React.FC<Props> = ({ subject, level }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'model', text: `Greetings. I am Prof. Nexus. I can assist with formulas, derivations, or conceptual questions regarding ${subject}.`, timestamp: Date.now() }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const getTutorName = () => {
+      switch(level) {
+          case EducationLevel.ELEMENTARY: return "Prof. Spark 🌟";
+          case EducationLevel.MIDDLE: return "Science Detective";
+          default: return "Prof. Nexus";
+      }
+  }
+
+  const getGreeting = () => {
+      switch(level) {
+          case EducationLevel.ELEMENTARY: return `Hi! I'm Prof. Spark! Ask me anything about ${subject}!`;
+          case EducationLevel.MIDDLE: return `Ready to investigate ${subject}? I can help you solve problems.`;
+          default: return `Greetings. I am Prof. Nexus. I can assist with concepts regarding ${subject}.`;
+      }
+  }
+
+  // Reset chat when level or subject changes
   useEffect(() => {
-    setMessages(prev => [
-        ...prev, 
-        { role: 'model', text: `Module switched to ${subject}. How can I assist with your research?`, timestamp: Date.now() }
+    setMessages([
+        { role: 'model', text: getGreeting(), timestamp: Date.now() }
     ]);
-  }, [subject]);
+  }, [subject, level]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,7 +54,7 @@ const TutorChat: React.FC<Props> = ({ subject }) => {
     setIsLoading(true);
 
     const history = messages.slice(-5).map(m => `${m.role}: ${m.text}`);
-    const responseText = await getTutorResponse(userMsg.text, subject, history);
+    const responseText = await getTutorResponse(userMsg.text, subject, level, history);
     
     setMessages(prev => [...prev, { role: 'model', text: responseText, timestamp: Date.now() }]);
     setIsLoading(false);
@@ -49,28 +64,36 @@ const TutorChat: React.FC<Props> = ({ subject }) => {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-slate-900 text-white p-4 rounded-full shadow-2xl hover:bg-slate-800 transition-all hover:scale-105 z-50 flex items-center gap-3 border border-slate-700"
+        className={`fixed bottom-6 right-6 text-white p-4 rounded-full shadow-2xl hover:scale-105 transition-all z-50 flex items-center gap-3 border border-white/20 ${
+            level === EducationLevel.ELEMENTARY ? 'bg-orange-500' : 'bg-slate-900'
+        }`}
       >
-        <BookOpen size={24} />
-        <span className="font-bold text-sm hidden md:inline">Prof. Nexus AI</span>
+        {level === EducationLevel.ELEMENTARY ? <Smile size={24} /> : <BookOpen size={24} />}
+        <span className="font-bold text-sm hidden md:inline">{getTutorName()} AI</span>
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-96 max-w-[90vw] h-[600px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border border-slate-200 overflow-hidden font-sans">
+    <div className={`fixed bottom-6 right-6 w-96 max-w-[90vw] h-[600px] bg-white rounded-lg shadow-2xl flex flex-col z-50 border overflow-hidden font-sans ${
+        level === EducationLevel.ELEMENTARY ? 'border-orange-300' : 'border-slate-200'
+    }`}>
       {/* Header */}
-      <div className="bg-slate-900 p-4 flex justify-between items-center text-white border-b border-slate-800">
+      <div className={`p-4 flex justify-between items-center text-white border-b ${
+          level === EducationLevel.ELEMENTARY ? 'bg-orange-500 border-orange-600' : 'bg-slate-900 border-slate-800'
+      }`}>
         <div className="flex items-center gap-3">
-            <div className="bg-lab-teal p-1.5 rounded text-slate-900">
+            <div className={`p-1.5 rounded ${level === EducationLevel.ELEMENTARY ? 'bg-white text-orange-500' : 'bg-lab-teal text-slate-900'}`}>
                 <Sparkles size={16} fill="currentColor" />
             </div>
             <div>
-                <h3 className="font-bold text-sm">Prof. Nexus</h3>
-                <span className="text-xs text-slate-400 block">Advanced Tutor Model v2.5</span>
+                <h3 className="font-bold text-sm">{getTutorName()}</h3>
+                <span className={`text-xs block ${level === EducationLevel.ELEMENTARY ? 'text-orange-100' : 'text-slate-400'}`}>
+                    {level === EducationLevel.ELEMENTARY ? 'Your Science Pal!' : 'AI Tutor'}
+                </span>
             </div>
         </div>
-        <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+        <button onClick={() => setIsOpen(false)} className="opacity-70 hover:opacity-100 transition-opacity">
             <X size={20} />
         </button>
       </div>
@@ -82,7 +105,7 @@ const TutorChat: React.FC<Props> = ({ subject }) => {
                 <div 
                     className={`max-w-[85%] p-3 rounded-lg text-sm leading-relaxed ${
                         msg.role === 'user' 
-                        ? 'bg-lab-blue text-white' 
+                        ? (level === EducationLevel.ELEMENTARY ? 'bg-orange-500 text-white' : 'bg-lab-blue text-white')
                         : 'bg-white border border-slate-200 text-slate-700 shadow-sm'
                     }`}
                 >
@@ -110,13 +133,15 @@ const TutorChat: React.FC<Props> = ({ subject }) => {
             type="text" 
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Input query or equation..." 
+            placeholder="Ask a question..." 
             className="flex-grow bg-slate-50 border border-slate-200 rounded px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all font-mono"
         />
         <button 
             type="submit" 
             disabled={!input.trim() || isLoading}
-            className="bg-slate-900 text-white p-2 rounded hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            className={`text-white p-2 rounded disabled:opacity-50 transition-colors ${
+                level === EducationLevel.ELEMENTARY ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-900 hover:bg-slate-800'
+            }`}
         >
             <Send size={18} />
         </button>
